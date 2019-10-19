@@ -1,0 +1,109 @@
+package myDSP;
+
+import java.util.Arrays;
+
+import be.tarsos.dsp.util.fft.FloatFFT;
+
+public class MyFFT_old extends MyComplexArrayFloat {
+
+	FloatFFT fft;
+	//int n;
+	//float [] buffer;
+	
+	private MyFFT_old(int n) {
+		this.n= n;
+		fft = new FloatFFT(n);
+	}
+	
+	
+	/**
+	 * 
+	 * @param x
+	 * @return
+	 */
+	public static MyFFT_old realForwardFull (float []x) {
+		return realForwardFull(x, x.length);
+	}
+	
+	public static MyFFT_old realForwardFull (float []xr, int n) {
+		
+		float [] x;
+		if (n <= xr.length) {
+			x = xr;
+		}
+		else // Need an ending zero padding
+		{
+			x = new float [n];
+			System.arraycopy(xr,  0,  x,  0,  xr.length);
+			Arrays.fill(x, xr.length, n, 0.0f);
+		}
+		
+				
+		//Because the result is stored in <code>a</code>,
+	    //the size of the input array must greater or equal 2*n, with only the
+	    //first n elements filled with real data.
+		float [] buffer = new float[2*n];
+		System.arraycopy(x, 0, buffer, 0, n);
+		Arrays.fill(buffer, n, n, 0.0f);
+		
+		MyFFT_old me = new MyFFT_old(n);		
+
+		me.fft.realForwardFull(buffer);
+		me.buffer = buffer;
+		
+		return me;
+		
+	}
+	
+	public void complexInverse() {
+		fft.complexInverse(buffer, false);
+	}
+	
+	/**
+	 * Multiplies the buffer content with the array h of real numbers. The result is stored in the buffer in the usual format:
+	 * The real part is stored at <code>2*i</code>, the imaginary part <code>2*i+i</code>
+	 * @param h The array with real numbers.
+	 * Data and other need to be the same length.
+	 */
+	public void timesRealSequence(float [] h) {
+		
+		// Adatto per fare il prodotto...: costruisco un array hh lungo il doppio tale che hh[2*k] = Re = h[k] e hh[2*k+1] = Im = 0; 
+		float [] hh = new float[2*h.length];
+		Arrays.fill(hh, 0.0f);
+		for (int i=0; i<hh.length; i+=2)
+			hh[i] = h[i];
+		
+		timesComplexSequence(hh);
+	}
+	
+	/**
+	 * 
+	 * @param hh
+	 */
+	public void timesComplexSequence(float [] hh) {
+		
+		multiplyComplexSequences(this.buffer, hh);
+	}
+	
+	/**
+	 * x1 will store the result
+	 * @param x1
+	 * @param x2
+	 */
+	static private void multiplyComplexSequences(float [] buffer, float []hh) {
+		assert buffer.length == hh.length;
+		if(buffer.length!=hh.length){
+			throw new IllegalArgumentException("Both arrays with imaginary numbers shouldb e of equal length");
+		}
+		for (int i = 1; i < buffer.length-1; i+=2) {
+			int realIndex = i;
+			int imgIndex = i + 1;
+			float tempReal = buffer[realIndex] * hh[realIndex] + -1 * buffer[imgIndex] * hh[imgIndex];
+			float tempImg = buffer[realIndex] * hh[imgIndex] + buffer[imgIndex] * hh[realIndex];
+			buffer[realIndex] = tempReal;
+			buffer[imgIndex] = tempImg;
+		}
+	}
+	
+	
+}
