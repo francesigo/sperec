@@ -1,0 +1,151 @@
+package sperec_common;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+/**
+ * This class in intended as an improvement of de.fau.cs.jstk.io.IOUtil.
+ * The readDouble (double []) function of de.fau.cs.jstk.io.IOUtil is not able to detect if the underlying InputStream,
+ * such as a FileInputStream, has less data left than the required. In this case, no Exception is thrown and false is returned.
+ * I think that it's a dangerous behavior because it hides underlying inconsistencies in I/O operations.
+ * @author francesco.sigona
+ *
+ */
+public class IOClass {
+
+	/**
+	 * Read a single int from the InputStream using given ByteOrder
+	 * pointer respectively.
+	 * @param is
+	 * @param bo
+	 * @return
+	 * @throws IOException
+	 */
+	public static int readInt(InputStream is, ByteOrder bo) 
+		throws IOException {
+		byte [] bbuf = new byte [Integer.SIZE / 8];
+		int read = is.read(bbuf);
+
+		if (read < bbuf.length)
+			throw new IOException ("could not read required bytes");
+
+		ByteBuffer bb = ByteBuffer.wrap(bbuf);
+		bb.order(bo);
+
+		return bb.getInt();
+	}
+	
+	/**
+	 * Write an int to the OutputStream and advance the stream
+	 * pointer respectively.
+	 * @param os
+	 * @param val
+	 * @param bo
+	 * @return
+	 * @throws IOException
+	 */
+	public static void writeInt(OutputStream os, int val, ByteOrder bo) 
+		throws IOException {
+		ByteBuffer bb = ByteBuffer.allocate(Integer.SIZE/8);
+		bb.order(bo);
+		bb.putInt(val);
+		os.write(bb.array());
+	}
+	
+	
+	/**
+	 * Read a n array of int from the InputStream using given ByteOrder
+	 * pointer respectively.
+	 * @param is
+	 * @param buf
+	 * @param bo
+	 * @return what InputStream.read returns, i.e. -1 in case of EOF, the number of int actually read (can be less than the required) otherwise. The caller application MUST check!
+	 * @throws IOException
+	 */
+	public static int readIntArray(InputStream is, int [] buf,  ByteOrder bo) throws IOException {
+		byte [] bbuf = new byte [buf.length * Integer.SIZE/8];
+		int read = is.read(bbuf);
+
+		/* That was the code in IOUtil
+		 * if (read < bbuf.length)
+		 *	return false;
+     	 */
+		if (read<0)
+			return read; //EOF
+
+		ByteBuffer bb = ByteBuffer.wrap(bbuf);
+		bb.order(bo);
+		
+		for (int i = 0; i < buf.length; ++i)
+			buf[i] = bb.getInt();
+		
+		int int_read = (int)Math.floor((double)read/(double)(Integer.SIZE/8));
+		return int_read; //return true;
+	}
+	
+	/**
+	 * Write the given int array to the OutputStream using given ByteOrder
+	 * @param os
+	 * @param buf
+	 * @param bo
+	 * @throws IOException
+	 */
+	public static void writeIntArray(OutputStream os, int [] buf, ByteOrder bo) throws IOException {
+		ByteBuffer bb = ByteBuffer.allocate(buf.length * Integer.SIZE/8);
+		bb.order(bo);
+		for (int d : buf) 
+			bb.putInt(d);
+		os.write(bb.array());
+	}
+	
+	
+	/**
+	 * Reads double array from a binary InputStream
+	 * 
+	 * @param is binary InputStream
+	 * @param buf (output) buffer
+	 * @return what InputStream.read returns, i.e. -1 in case of EOF, the number of doubles actually read (can be less than the required) otherwise. The caller application MUST check!
+	 * @throws IOException
+	 */
+	public static int readDoubleArray(InputStream is, double [] buf, ByteOrder bo) throws IOException {
+		byte [] bbuf = new byte[buf.length * Double.SIZE / 8];
+		int read = is.read(bbuf);
+
+		/* That was the code in IOUtil
+		 * if (read < bbuf.length)
+		 *	return false;
+		 */
+		if (read<0)
+			return read; //EOF
+
+		ByteBuffer bb = ByteBuffer.wrap(bbuf);
+		bb.order(bo);
+
+		for (int i = 0; i < buf.length; ++i)
+			buf[i] = bb.getDouble();
+		
+		int double_read = (int)Math.floor((double)read/(double)(Double.SIZE/8));
+
+		return double_read; //return true;
+	}
+	
+	/**
+	 * Write the given double array to the OutputStream using the specified 
+	 * ByteOrder
+	 * @param os
+	 * @param buf
+	 * @param bo
+	 * @throws IOException
+	 */
+	public static void writeDoubleArray(OutputStream os, double [] buf, ByteOrder bo) 
+		throws IOException {
+		ByteBuffer bb = ByteBuffer.allocate(buf.length * Double.SIZE/8);
+		bb.order(bo);
+		for (double d : buf) 
+			bb.putDouble(d);
+		os.write(bb.array());
+	}
+}
